@@ -107,13 +107,13 @@ export default function Home() {
       socket.off("state", onState);
       socket.off("chat messages", onMessages);
     };
-  }, [isSeeking, videoUrl]);
+  }, []);
 
   useEffect(() => {
     if (!isSeeking) {
       videoRef.current?.seekTo(currentTime);
     }
-  }, [currentTime, isSeeking]);
+  }, [currentTime]);
 
   const handlePlay = () => {
     console.log("[client] play");

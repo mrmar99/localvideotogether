@@ -13,27 +13,11 @@ let state = {};
 let clientQty = 0;
 let chatMessages = [];
 
-// function checkVideoDuration(io) {
-//   const firstClientState = Array.from(clientsState.values())[0];
-//   const firstClientDuration = firstClientState.videoDuration;
-
-//   for (const state of clientsState.values()) {
-//     if (state.videoDuration !== firstClientDuration) {
-//       console.log("Ошибка: Длительности видео у клиентов различаются.");
-//       return;
-//     }
-//   }
-
-//   console.log("Длительность видео у всех клиентов одинаковая.");
-// }
-
 app.prepare().then(() => {
   const httpServer = createServer(handler);
   const io = new Server(httpServer);
 
   io.on("connection", (socket) => {
-    let username = "";
-
     clientQty++;
     console.log(state);
 
@@ -43,10 +27,6 @@ app.prepare().then(() => {
         isPlaying: false
       };
     }
-
-    socket.on("set username", (name) => {
-      username = name;
-    });
 
     socket.on("state", () => {
       socket.emit("state", state);
