@@ -58,10 +58,12 @@
   color: white;
 }
 
-.myUsernameInput:hover,
+.myUsernameInput,
 .myUsernameInput:focus,
+.myUsernameInput:hover,
+.myUsernameInput:not(:focus):hover,
 .myUsernameInput::placeholder {
-  background-color: #17212b;
+  background-color: #17212b!important;
   color: white;
 }
 
