@@ -107,13 +107,13 @@ export default function Home() {
       socket.off("state", onState);
       socket.off("chat messages", onMessages);
     };
-  }, []);
+  }, [isSeeking, videoUrl]);
 
   useEffect(() => {
     if (!isSeeking) {
       videoRef.current?.seekTo(currentTime);
     }
-  }, [currentTime]);
+  }, [currentTime, isSeeking]);
 
   const handlePlay = () => {
     console.log("[client] play");
@@ -217,7 +217,7 @@ export default function Home() {
             {isDragActive ? (
               <p>Drop the files here ...</p>
             ) : (
-              <p>Drag 'n' drop some files here, or click to select files</p>
+              <p>Drag &apos;n&apos; drop some files here, or click to select files</p>
             )}
           </div>
         )}
