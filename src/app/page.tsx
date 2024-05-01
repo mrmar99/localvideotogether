@@ -4,8 +4,8 @@ import ReactPlayer from "react-player";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { socket } from "../socket";
-import { Button, Popconfirm, Input } from "antd";
-import { SendOutlined, UserOutlined } from "@ant-design/icons";
+import { Button, Popconfirm, Input, ColorPicker } from "antd";
+import { SendOutlined, TeamOutlined, UserOutlined } from "@ant-design/icons";
 import { generateUsername } from "unique-username-generator";
 import styles from "./page.module.css";
 import React from "react";
@@ -16,12 +16,13 @@ export type TChatMessage = {
   username: string;
   message: string;
   timestamp: number;
+  color: string;
 };
 
 const formatLocalTime = (timestamp: number) => {
   const date = new Date(timestamp);
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const hours = date.getHours().toString().padStart(2, "0");
+  const minutes = date.getMinutes().toString().padStart(2, "0");
   return `${hours}:${minutes}`;
 };
 
@@ -29,11 +30,16 @@ export default function Home() {
   const [myUsername, setMyUsername] = useState(() => {
     let usernameInStorage;
     if (typeof window !== "undefined") {
-      usernameInStorage = window.localStorage.getItem(
-        "togethervideo.username"
-      );
+      usernameInStorage = window.localStorage.getItem("togethervideo.username");
     }
     return usernameInStorage || generateUsername("", 0, 10);
+  });
+  const [userColor, setUserColor] = useState(() => {
+    let colorInStorage;
+    if (typeof window !== "undefined") {
+      colorInStorage = window.localStorage.getItem("togethervideo.color");
+    }
+    return colorInStorage || "#fff";
   });
   const [isConnected, setIsConnected] = useState(false);
   const [transport, setTransport] = useState("N/A");
@@ -43,7 +49,9 @@ export default function Home() {
   const [currentTime, setCurrentTime] = useState(0);
   const [chatMessages, setChatMessages] = useState<Array<TChatMessage>>([]);
   const [messageInput, setMessageInput] = useState("");
+  const [clientsQty, setClientsQty] = useState(1);
   const videoRef = useRef<ReactPlayer>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const onDrop = useCallback((acceptedFiles: any) => {
     console.log(acceptedFiles);
@@ -54,6 +62,17 @@ export default function Home() {
     }
   }, []);
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
+
+  const scrollToBottom = () => {
+    chatContainerRef.current?.scroll({
+      top: chatContainerRef.current?.scrollHeight,
+      behavior: "smooth",
+    });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [chatMessages]);
 
   useEffect(() => {
     if (socket.connected) {
@@ -75,14 +94,16 @@ export default function Home() {
     }
 
     const onState = (state: any) => {
-      const { isPlaying, currentTime } = state;
+      const { isPlaying, currentTime, clientsQty } = state;
       console.log(
         "got state from server",
         currentTime,
         videoUrl,
         videoRef,
-        isSeeking
+        isSeeking,
+        clientsQty
       );
+      setClientsQty(clientsQty);
       setIsPlaying(isPlaying);
       if (!isSeeking) {
         setCurrentTime(currentTime);
@@ -96,16 +117,31 @@ export default function Home() {
       setChatMessages(data);
     };
 
+    const onGetVideoTimes = () => {
+      socket.emit("send video time", videoRef.current?.getCurrentTime());
+    };
+
+    const onBeforeUnload = () => {
+      socket.emit("disconnect");
+    };
+
+    window.addEventListener('beforeunload', onBeforeUnload);
+
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
     socket.on("state", onState);
     socket.on("chat messages", onMessages);
+    socket.on("get video times", onGetVideoTimes);
+
+    socket.emit("state");
 
     return () => {
+      window.removeEventListener('beforeunload', onBeforeUnload);
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
       socket.off("state", onState);
       socket.off("chat messages", onMessages);
+      socket.off("get video times", onGetVideoTimes);
     };
   }, []);
 
@@ -158,6 +194,7 @@ export default function Home() {
         username: myUsername,
         message: messageInput,
         timestamp: Date.now(),
+        color: userColor,
       };
       setChatMessages([...chatMessages, newMessage]);
       setMessageInput("");
@@ -173,17 +210,55 @@ export default function Home() {
     }
   };
 
+  const handleChangeUserColor = (e: any) => {
+    const color = e.toHexString();
+    setUserColor(color);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("togethervideo.color", color);
+    }
+    socket.emit("user color", { username: myUsername, color });
+  };
+
+  const handleSync = () => {
+    socket.emit("video sync");
+  };
+
+  const handleButtonSeek = (seekTime: number) => {
+    if (videoRef.current) {
+      const newTime = videoRef.current.getCurrentTime() + seekTime;
+      setCurrentTime(newTime);
+      socket.emit("video seek", newTime);
+    }
+  };
+
   return (
     <React.Fragment>
       <div className={styles.container}>
-        <Input
-          placeholder="Имя пользователя"
-          value={myUsername}
-          onChange={handleMyUsernameChange}
-          className={styles.myUsernameInput}
-          size="middle"
-          prefix={<UserOutlined />}
-        />
+        <div className={styles.statusBar}>
+          <div className={styles.userSettings}>
+            <ColorPicker
+              onChangeComplete={handleChangeUserColor}
+              size="small"
+            />
+            <Input
+              placeholder="Имя пользователя"
+              value={myUsername}
+              onChange={handleMyUsernameChange}
+              className={styles.myUsernameInput}
+              size="middle"
+              prefix={<UserOutlined />}
+            />
+          </div>
+          <div className={styles.statusBarInfo}>
+            <div className={styles.statusBarConnectingState}>
+              {!isConnected && "Connecting..."}
+            </div>
+            <div className={styles.statusBarInfoClientsQty}>
+              <TeamOutlined />
+              {clientsQty}
+            </div>
+          </div>
+        </div>
         {videoUrl ? (
           <div className={styles.video}>
             <ReactPlayer
@@ -199,16 +274,42 @@ export default function Home() {
               pip
             />
             <div className={styles.videoControls}>
-              <Button type="primary">Синхронизировать</Button>
-              <Popconfirm
-                title="Удалить видео"
-                description="Точно удалить?"
-                okText="Удалить"
-                cancelText="Нет"
-                onConfirm={handleRemoveVideo}
-              >
-                <Button danger>Удалить видео</Button>
-              </Popconfirm>
+              <div className={styles.videoControlsRow}>
+                <Button onClick={handleSync} type="primary" size="small">
+                  Синхронизировать
+                </Button>
+                <Popconfirm
+                  title="Удалить видео"
+                  description="Точно удалить?"
+                  okText="Удалить"
+                  cancelText="Нет"
+                  onConfirm={handleRemoveVideo}
+                >
+                  <Button danger size="small">
+                    Удалить видео
+                  </Button>
+                </Popconfirm>
+              </div>
+              <div className={styles.videoControlsRow}>
+                <Button onClick={() => handleButtonSeek(-10)} size="small">
+                  {"◀10"}
+                </Button>
+                <Button onClick={() => handleButtonSeek(-5)} size="small">
+                  {"◀5"}
+                </Button>
+                <Button onClick={() => handleButtonSeek(-1)} size="small">
+                  {"◀1"}
+                </Button>
+                <Button onClick={() => handleButtonSeek(1)} size="small">
+                  {"1▶"}
+                </Button>
+                <Button onClick={() => handleButtonSeek(5)} size="small">
+                  {"5▶"}
+                </Button>
+                <Button onClick={() => handleButtonSeek(10)} size="small">
+                  {"10▶"}
+                </Button>
+              </div>
             </div>
           </div>
         ) : (
@@ -217,39 +318,63 @@ export default function Home() {
             {isDragActive ? (
               <p>Drop the files here ...</p>
             ) : (
-              <p>Drag &apos;n&apos; drop some files here, or click to select files</p>
+              <p>
+                Drag &apos;n&apos; drop some files here, or click to select
+                files
+              </p>
             )}
           </div>
         )}
-        <div className={styles.chat}>
+        <div ref={chatContainerRef} className={styles.chat}>
           <div className={styles.chatMessages}>
-            {chatMessages.map(({ username, message, timestamp }, index) => {
-              return username === myUsername ? (
-                <div
-                  className={styles.chatMessage}
-                  style={{
-                    alignSelf: "flex-end",
-                    textAlign: "right",
-                    paddingLeft: "24px",
-                    paddingRight: "12px",
-                  }}
-                  key={index}
-                >
-                  <span className={styles.chatMessageUsername}>{username}</span>
-                  {message}
-                  <span style={{
-                    marginLeft: "-12px",
-                    textAlign: "left"
-                  }} className={styles.chatMessageTimestamp}>{formatLocalTime(timestamp)}</span>
-                </div>
-              ) : (
-                <div className={styles.chatMessage} key={index}>
-                  <span className={styles.chatMessageUsername}>{username}</span>
-                  {message}
-                  <span className={styles.chatMessageTimestamp}>{formatLocalTime(timestamp)}</span>
-                </div>
-              );
-            })}
+            {chatMessages.map(
+              ({ username, message, timestamp, color }, index) => {
+                return username === myUsername ? (
+                  <div
+                    className={`${styles.chatMessage} ${styles.chatMessageRight}`}
+                    key={index}
+                  >
+                    <span
+                      style={{ color }}
+                      className={styles.chatMessageUsername}
+                    >
+                      {username}
+                    </span>
+                    <div className={styles.chatMessageRow}>
+                      <span className={styles.chatMessageMessage}>
+                        {message}
+                      </span>
+                      <span
+                        style={{ marginRight: 0 }}
+                        className={styles.chatMessageTimestamp}
+                      >
+                        {formatLocalTime(timestamp)}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className={`${styles.chatMessage} ${styles.chatMessageLeft}`}
+                    key={index}
+                  >
+                    <span
+                      style={{ color }}
+                      className={styles.chatMessageUsername}
+                    >
+                      {username}
+                    </span>
+                    <div className={styles.chatMessageRow}>
+                      <span className={styles.chatMessageMessage}>
+                        {message}
+                      </span>
+                      <span className={styles.chatMessageTimestamp}>
+                        {formatLocalTime(timestamp)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
+            )}
           </div>
           <div className={styles.chatTextAreaContainer}>
             <TextArea

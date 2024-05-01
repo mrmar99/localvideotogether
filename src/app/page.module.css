@@ -3,6 +3,7 @@
   flex-direction: column;
   width: 100%;
   height: 100dvh;
+  background-color: #0e1621;
 }
 
 .fileInput {
@@ -19,18 +20,38 @@
 
 .videoControls {
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
-  padding: 8px;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 8px 8px 8px;
   background-color: #0e1621;
+}
+
+.videoControlsRow {
+  display: flex;
+  width: 100%;
+  gap: 6px;
+  align-items: center;
 }
 
 .videoControls button {
   flex: 1;
 }
 
+.statusBar {
+  display: flex;
+  background-color: #17212b;
+}
+
+.userSettings {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding-left: 10px;
+}
+
 .myUsernameInput {
+  display: flex;
+  align-items: center;
   border-radius: 0;
   background-color: #17212b;
   border: none;
@@ -42,6 +63,26 @@
 .myUsernameInput::placeholder {
   background-color: #17212b;
   color: white;
+}
+
+.statusBarInfo {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: right;
+  padding-right: 10px;
+  gap: 10px;
+}
+
+.statusBarConnectingState {
+  font-size: 12px;
+}
+
+.statusBarInfoClientsQty {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
 }
 
 .chat {
@@ -58,10 +99,12 @@
 }
 
 .chatMessage {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 4px;
   background-color: #2b5278;
+  color: #ffffff;
   padding: 6px 24px 6px 12px;
   border-radius: 8px;
   width: fit-content;
@@ -71,17 +114,59 @@
   font-size: 14px;
 }
 
+.chatMessageRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chatMessageRight {
+  align-self: flex-end;
+  text-align: right;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.chatMessageRight::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: -8px;
+  border: 10px solid;
+  border-color: transparent transparent #2b5278 transparent;
+}
+
+.chatMessageLeft {
+  text-align: left;
+  padding-right: 24px;
+  padding-left: 12px;
+}
+
+.chatMessageLeft::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: -8px;
+  border: 10px solid;
+  border-color: transparent transparent #2b5278 transparent;
+}
+
 .chatMessageUsername {
-  font-size: 12px;
+  font-size: 10px;
   color: #ebebeb;
   font-weight: 600;
 }
 
+.chatMessageMessage {
+  margin-bottom: 8px;
+}
+
 .chatMessageTimestamp {
-  margin-top: 2px;
-  font-size: 10px;
-  margin-right: -12px;
+  font-size: 9px;
+  margin-right: -16px;
+  align-self: flex-end;
   text-align: right;
+  margin-left: 12px;
 }
 
 .chatTextAreaContainer {

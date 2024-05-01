@@ -10,30 +10,69 @@ const app = next({ dev, hostname, port });
 const handler = app.getRequestHandler();
 
 let state = {};
-let clientQty = 0;
 let chatMessages = [];
+let clientTimes = [];
+const clientsSet = new Set();
 
 app.prepare().then(() => {
   const httpServer = createServer(handler);
-  const io = new Server(httpServer);
+  const io = new Server(httpServer, {
+    pingTimeout: 2000,
+    pingInterval: 2000,
+  });
+
+  if (!Object.keys(state).length) {
+    state = {
+      currentTime: 0,
+      isPlaying: false,
+      clientsQty: 0,
+    };
+  }
 
   io.on("connection", (socket) => {
-    clientQty++;
+    const clientId = socket.client.id;
+    console.log(socket.client.id);
+    clientsSet.add(clientId);
+
+    state.clientsQty = clientsSet.size;
+    io.emit("state", state);
+    console.log(clientsSet);
+
     console.log(state);
 
-    if (!Object.keys(state).length) {
-      state = {
-        currentTime: 0,
-        isPlaying: false
-      };
-    }
-
     socket.on("state", () => {
-      socket.emit("state", state);
+      io.emit("state", state);
+    });
+
+    socket.on("video sync", () => {
+      io.emit("get video times");
+    });
+
+    socket.on("send video time", (currentTime) => {
+      console.log(clientId, currentTime);
+      clientTimes.push(currentTime); // Добавляем время от клиента в массив
+      const maxTime = Math.max(...clientTimes); // Выбираем минимальное значение из всех времен
+      if (maxTime && maxTime > 1) {
+        state.currentTime = maxTime;
+        io.emit("state", state); // Устанавливаем минимальное время всем клиентам
+        clientTimes = []; // Очищаем массив для следующего запроса
+      }
     });
 
     socket.on("chat message", (message) => {
       chatMessages.push(message);
+      io.emit("chat messages", chatMessages);
+    });
+
+    socket.on("user color", (data) => {
+      const { username, color } = data;
+
+      for (const message of chatMessages) {
+        if (message.username === username) {
+          message.color = color;
+        }
+      }
+
       io.emit("chat messages", chatMessages);
     });
 
@@ -56,14 +95,18 @@ app.prepare().then(() => {
     });
 
     socket.on("disconnect", () => {
-      clientQty--;
+      clientsSet.delete(clientId);
+      state.clientsQty = clientsSet.size;
 
-      if (clientQty === 0) {
+      if (state.clientsQty === 0) {
         chatMessages = [];
         state = {
           currentTime: 0,
           isPlaying: false,
+          clientsQty: 0,
         };
+      } else {
+        io.emit("state", state);
       }
     });
   });
