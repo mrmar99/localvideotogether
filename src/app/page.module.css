@@ -1,0 +1,132 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100dvh;
+}
+
+.fileInput {
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  color: white;
+  background-color: #050a12;
+  height: 100px;
+  cursor: pointer;
+}
+
+.videoControls {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  background-color: #0e1621;
+}
+
+.videoControls button {
+  flex: 1;
+}
+
+.myUsernameInput {
+  border-radius: 0;
+  background-color: #17212b;
+  border: none;
+  color: white;
+}
+
+.myUsernameInput:hover,
+.myUsernameInput:focus,
+.myUsernameInput::placeholder {
+  background-color: #17212b;
+  color: white;
+}
+
+.chat {
+  padding: 16px 16px 60px 16px;
+  background-color: #0e1621;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.chatMessages {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chatMessage {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background-color: #2b5278;
+  padding: 6px 24px 6px 12px;
+  border-radius: 8px;
+  width: fit-content;
+  max-width: 70%;
+  text-wrap: wrap;
+  word-wrap: break-word;
+  font-size: 14px;
+}
+
+.chatMessageUsername {
+  font-size: 12px;
+  color: #ebebeb;
+  font-weight: 600;
+}
+
+.chatMessageTimestamp {
+  margin-top: 2px;
+  font-size: 10px;
+  margin-right: -12px;
+  text-align: right;
+}
+
+.chatTextAreaContainer {
+  position: fixed!important;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1;
+}
+
+.chatTextAreaContainer textarea {
+  position: relative;
+  border-radius: 0;
+  padding: 8px 60px 4px 20px;
+  background-color: #17212b;
+  color: white;
+  outline: none;
+  border: none;
+}
+
+.chatTextAreaContainer textarea:hover,
+.chatTextAreaContainer textarea:focus,
+.chatTextAreaContainer textarea::placeholder {
+  background-color: #17212b;
+  color: rgb(214, 214, 214);
+  outline: none;
+}
+
+.sendButton {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  top: 2px;
+  right: 16px;
+  z-index: 10;
+}
+
+.sendButton svg path {
+  fill: #5288c1;
+}
+
+.sendButton:hover svg path {
+  fill: #3f77b2;
+}
