@@ -1,14 +1,22 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import ReactPlayer from "react-player";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useDropzone } from "react-dropzone";
 import { socket } from "../socket";
-import { Button, Popconfirm, Input, ColorPicker } from "antd";
+import { Button, Popconfirm, Input } from "antd";
 import { SendOutlined, TeamOutlined, UserOutlined } from "@ant-design/icons";
 import { generateUsername } from "unique-username-generator";
 import styles from "./page.module.css";
 import React from "react";
+import { isMobile } from "react-device-detect";
+import Avatar from "boring-avatars";
+import randomColor from "randomcolor";
+
+const ColorPicker = dynamic(() => import("antd/lib/color-picker"), {
+  ssr: false,
+});
 
 const { TextArea } = Input;
 
@@ -27,18 +35,30 @@ const formatLocalTime = (timestamp: number) => {
 };
 
 export default function Home() {
+  const randomColors = useMemo(() => {
+    return [
+      randomColor({ hue: 'red' }),
+      randomColor({ hue: 'green' }),
+      randomColor({ hue: 'blue' }),
+      randomColor({ hue: 'pink' }),
+      randomColor({ hue: 'yellow' }),
+    ];
+  }, []);
+
+  let usernameInStorage: string = "";
+  if (typeof window !== "undefined") {
+    usernameInStorage =
+      window.localStorage.getItem("togethervideo.username") || "";
+  }
+  let colorInStorage: string = "";
+  if (typeof window !== "undefined") {
+    colorInStorage = window.localStorage.getItem("togethervideo.color") || "";
+  }
+
   const [myUsername, setMyUsername] = useState(() => {
-    let usernameInStorage;
-    if (typeof window !== "undefined") {
-      usernameInStorage = window.localStorage.getItem("togethervideo.username");
-    }
     return usernameInStorage || generateUsername("", 0, 10);
   });
   const [userColor, setUserColor] = useState(() => {
-    let colorInStorage;
-    if (typeof window !== "undefined") {
-      colorInStorage = window.localStorage.getItem("togethervideo.color");
-    }
     return colorInStorage || "#fff";
   });
   const [isConnected, setIsConnected] = useState(false);
@@ -52,9 +72,9 @@ export default function Home() {
   const [clientsQty, setClientsQty] = useState(1);
   const videoRef = useRef<ReactPlayer>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const messageAreaRef = useRef<HTMLInputElement>(null);
 
   const onDrop = useCallback((acceptedFiles: any) => {
-    console.log(acceptedFiles);
     if (acceptedFiles && acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
       const url = URL.createObjectURL(file);
@@ -125,7 +145,7 @@ export default function Home() {
       socket.emit("disconnect");
     };
 
-    window.addEventListener('beforeunload', onBeforeUnload);
+    window.addEventListener("beforeunload", onBeforeUnload);
 
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
@@ -136,7 +156,7 @@ export default function Home() {
     socket.emit("state");
 
     return () => {
-      window.removeEventListener('beforeunload', onBeforeUnload);
+      window.removeEventListener("beforeunload", onBeforeUnload);
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
       socket.off("state", onState);
@@ -188,11 +208,14 @@ export default function Home() {
     setMessageInput(e.target.value);
   };
 
-  const sendMessage = () => {
-    if (messageInput.trim() !== "") {
+  const handleSendMessage = () => {
+    messageAreaRef.current?.focus();
+
+    const msg = messageInput.trim();
+    if (msg !== "") {
       const newMessage: TChatMessage = {
         username: myUsername,
-        message: messageInput,
+        message: msg,
         timestamp: Date.now(),
         color: userColor,
       };
@@ -204,9 +227,11 @@ export default function Home() {
   };
 
   const handleMyUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setMyUsername(e.target.value);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("togethervideo.username", e.target.value);
+    if (e.target.value.length <= 20) {
+      setMyUsername(e.target.value);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("togethervideo.username", e.target.value);
+      }
     }
   };
 
@@ -231,6 +256,13 @@ export default function Home() {
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!isMobile && e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
   return (
     <React.Fragment>
       <div className={styles.container}>
@@ -239,14 +271,17 @@ export default function Home() {
             <ColorPicker
               onChangeComplete={handleChangeUserColor}
               size="small"
+              value={userColor}
             />
             <Input
               placeholder="Имя пользователя"
               value={myUsername}
               onChange={handleMyUsernameChange}
+              color="white"
               className={styles.myUsernameInput}
               size="middle"
               prefix={<UserOutlined />}
+              variant="borderless"
             />
           </div>
           <div className={styles.statusBarInfo}>
@@ -260,8 +295,9 @@ export default function Home() {
           </div>
         </div>
         {videoUrl ? (
-          <div className={styles.video}>
+          <div className={styles.videoContainer}>
             <ReactPlayer
+              className={styles.video}
               ref={videoRef}
               onPlay={handlePlay}
               onPause={handlePause}
@@ -331,45 +367,69 @@ export default function Home() {
               ({ username, message, timestamp, color }, index) => {
                 return username === myUsername ? (
                   <div
-                    className={`${styles.chatMessage} ${styles.chatMessageRight}`}
-                    key={index}
+                    className={`${styles.chatMessageBlock} ${styles.chatMessageBlockRight}`}
                   >
-                    <span
-                      style={{ color }}
-                      className={styles.chatMessageUsername}
+                    <div
+                      className={`${styles.chatMessage} ${styles.chatMessageRight}`}
+                      key={index}
                     >
-                      {username}
-                    </span>
-                    <div className={styles.chatMessageRow}>
-                      <span className={styles.chatMessageMessage}>
-                        {message}
-                      </span>
                       <span
-                        style={{ marginRight: 0 }}
-                        className={styles.chatMessageTimestamp}
+                        style={{ color }}
+                        className={styles.chatMessageUsername}
                       >
-                        {formatLocalTime(timestamp)}
+                        {username}
                       </span>
+                      <div className={styles.chatMessageRow}>
+                        <span className={styles.chatMessageMessage}>
+                          {message}
+                        </span>
+                        <span
+                          style={{ marginRight: 0 }}
+                          className={styles.chatMessageTimestamp}
+                        >
+                          {formatLocalTime(timestamp)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className={styles.avatar}>
+                      <Avatar
+                        colors={[color, ...randomColors, color]}
+                        name={username}
+                        size={30}
+                        variant="beam"
+                      />
                     </div>
                   </div>
                 ) : (
                   <div
-                    className={`${styles.chatMessage} ${styles.chatMessageLeft}`}
-                    key={index}
+                    className={`${styles.chatMessageBlock} ${styles.chatMessageBlockLeft}`}
                   >
-                    <span
-                      style={{ color }}
-                      className={styles.chatMessageUsername}
+                    <div className={styles.avatar}>
+                      <Avatar
+                        colors={[color, ...randomColors, color]}
+                        name={username}
+                        size={30}
+                        variant="beam"
+                      />
+                    </div>
+                    <div
+                      className={`${styles.chatMessage} ${styles.chatMessageLeft}`}
+                      key={index}
                     >
-                      {username}
-                    </span>
-                    <div className={styles.chatMessageRow}>
-                      <span className={styles.chatMessageMessage}>
-                        {message}
+                      <span
+                        style={{ color }}
+                        className={styles.chatMessageUsername}
+                      >
+                        {username}
                       </span>
-                      <span className={styles.chatMessageTimestamp}>
-                        {formatLocalTime(timestamp)}
-                      </span>
+                      <div className={styles.chatMessageRow}>
+                        <span className={styles.chatMessageMessage}>
+                          {message}
+                        </span>
+                        <span className={styles.chatMessageTimestamp}>
+                          {formatLocalTime(timestamp)}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 );
@@ -384,8 +444,14 @@ export default function Home() {
               }}
               value={messageInput}
               onChange={handleMessageChange}
+              ref={messageAreaRef}
+              variant="borderless"
+              onKeyDown={handleKeyDown}
             />
-            <SendOutlined className={styles.sendButton} onClick={sendMessage} />
+            <SendOutlined
+              className={styles.sendButton}
+              onClick={handleSendMessage}
+            />
           </div>
         </div>
       </div>
