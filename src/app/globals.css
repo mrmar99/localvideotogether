@@ -1,3 +1,10 @@
+.EmojiPickerReact.epr-dark-theme {
+  --epr-search-input-bg-color: #17212b!important;
+  --epr-search-border-color: #17212b!important;
+  --epr-bg-color: #17212b!important;
+  --epr-category-label-bg-color: #17212be6!important;
+}
+
 :root {
   --max-width: 1100px;
   --border-radius: 12px;

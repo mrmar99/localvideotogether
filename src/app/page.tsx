@@ -6,13 +6,19 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useDropzone } from "react-dropzone";
 import { socket } from "../socket";
 import { Button, Popconfirm, Input } from "antd";
-import { SendOutlined, TeamOutlined, UserOutlined } from "@ant-design/icons";
+import {
+  SendOutlined,
+  TeamOutlined,
+  UserOutlined,
+  SmileOutlined,
+} from "@ant-design/icons";
 import { generateUsername } from "unique-username-generator";
 import styles from "./page.module.css";
 import React from "react";
 import { isMobile } from "react-device-detect";
 import Avatar from "boring-avatars";
 import randomColor from "randomcolor";
+import EmojiPicker, { EmojiStyle, Theme } from "emoji-picker-react";
 
 const ColorPicker = dynamic(() => import("antd/lib/color-picker"), {
   ssr: false,
@@ -37,11 +43,11 @@ const formatLocalTime = (timestamp: number) => {
 export default function Home() {
   const randomColors = useMemo(() => {
     return [
-      randomColor({ hue: 'red' }),
-      randomColor({ hue: 'green' }),
-      randomColor({ hue: 'blue' }),
-      randomColor({ hue: 'pink' }),
-      randomColor({ hue: 'yellow' }),
+      randomColor({ hue: "red" }),
+      randomColor({ hue: "green" }),
+      randomColor({ hue: "blue" }),
+      randomColor({ hue: "pink" }),
+      randomColor({ hue: "yellow" }),
     ];
   }, []);
 
@@ -66,10 +72,12 @@ export default function Home() {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isSeeking, setIsSeeking] = useState(false);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [chatMessages, setChatMessages] = useState<Array<TChatMessage>>([]);
   const [messageInput, setMessageInput] = useState("");
   const [clientsQty, setClientsQty] = useState(1);
+  const videoContainerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<ReactPlayer>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const messageAreaRef = useRef<HTMLInputElement>(null);
@@ -209,7 +217,9 @@ export default function Home() {
   };
 
   const handleSendMessage = () => {
-    messageAreaRef.current?.focus();
+    if (!isEmojiPickerOpen) {
+      messageAreaRef.current?.focus();
+    }
 
     const msg = messageInput.trim();
     if (msg !== "") {
@@ -263,115 +273,126 @@ export default function Home() {
     }
   };
 
+  const handleToggleEmojiOpen = () => {
+    const newState = !isEmojiPickerOpen;
+    setIsEmojiPickerOpen(newState);
+  };
+
   return (
     <React.Fragment>
       <div className={styles.container}>
-        <div className={styles.statusBar}>
-          <div className={styles.userSettings}>
-            <ColorPicker
-              onChangeComplete={handleChangeUserColor}
-              size="small"
-              value={userColor}
-            />
-            <Input
-              placeholder="Имя пользователя"
-              value={myUsername}
-              onChange={handleMyUsernameChange}
-              color="white"
-              className={styles.myUsernameInput}
-              size="middle"
-              prefix={<UserOutlined />}
-              variant="borderless"
-            />
-          </div>
-          <div className={styles.statusBarInfo}>
-            <div className={styles.statusBarConnectingState}>
-              {!isConnected && "Connecting..."}
+        <div>
+          <div className={styles.statusBar}>
+            <div className={styles.userSettings}>
+              <ColorPicker
+                onChangeComplete={handleChangeUserColor}
+                size="small"
+                value={userColor}
+              />
+              <Input
+                placeholder="Имя пользователя"
+                value={myUsername}
+                onChange={handleMyUsernameChange}
+                color="white"
+                className={styles.myUsernameInput}
+                size="middle"
+                prefix={<UserOutlined />}
+                variant="borderless"
+              />
             </div>
-            <div className={styles.statusBarInfoClientsQty}>
-              <TeamOutlined />
-              {clientsQty}
+            <div className={styles.statusBarInfo}>
+              <div className={styles.statusBarConnectingState}>
+                {!isConnected && "Connecting..."}
+              </div>
+              <div className={styles.statusBarInfoClientsQty}>
+                <TeamOutlined />
+                {clientsQty}
+              </div>
             </div>
           </div>
-        </div>
-        {videoUrl ? (
-          <div className={styles.videoContainer}>
-            <ReactPlayer
-              className={styles.video}
-              ref={videoRef}
-              onPlay={handlePlay}
-              onPause={handlePause}
-              onSeek={handleSeek}
-              playing={isPlaying}
-              width="100%"
-              height=""
-              url={videoUrl}
-              controls
-              pip
-            />
-            <div className={styles.videoControls}>
-              <div className={styles.videoControlsRow}>
-                <Button onClick={handleSync} type="primary" size="small">
-                  Синхронизировать
-                </Button>
-                <Popconfirm
-                  title="Удалить видео"
-                  description="Точно удалить?"
-                  okText="Удалить"
-                  cancelText="Нет"
-                  onConfirm={handleRemoveVideo}
-                >
-                  <Button danger size="small">
-                    Удалить видео
+          {videoUrl ? (
+            <div className={styles.videoContainer}>
+              <ReactPlayer
+                className={styles.video}
+                ref={videoRef}
+                onPlay={handlePlay}
+                onPause={handlePause}
+                onSeek={handleSeek}
+                playing={isPlaying}
+                width="100%"
+                height=""
+                url={videoUrl}
+                controls
+                pip
+              />
+              <div className={styles.videoControls}>
+                <div className={styles.videoControlsRow}>
+                  <Button onClick={handleSync} type="primary" size="small">
+                    Синхронизировать
                   </Button>
-                </Popconfirm>
-              </div>
-              <div className={styles.videoControlsRow}>
-                <Button onClick={() => handleButtonSeek(-10)} size="small">
-                  {"◀10"}
-                </Button>
-                <Button onClick={() => handleButtonSeek(-5)} size="small">
-                  {"◀5"}
-                </Button>
-                <Button onClick={() => handleButtonSeek(-1)} size="small">
-                  {"◀1"}
-                </Button>
-                <Button onClick={() => handleButtonSeek(1)} size="small">
-                  {"1▶"}
-                </Button>
-                <Button onClick={() => handleButtonSeek(5)} size="small">
-                  {"5▶"}
-                </Button>
-                <Button onClick={() => handleButtonSeek(10)} size="small">
-                  {"10▶"}
-                </Button>
+                  <Popconfirm
+                    title="Удалить видео"
+                    description="Точно удалить?"
+                    okText="Удалить"
+                    cancelText="Нет"
+                    onConfirm={handleRemoveVideo}
+                  >
+                    <Button danger size="small">
+                      Удалить видео
+                    </Button>
+                  </Popconfirm>
+                </div>
+                <div className={styles.videoControlsRow}>
+                  <Button onClick={() => handleButtonSeek(-10)} size="small">
+                    {"◀10"}
+                  </Button>
+                  <Button onClick={() => handleButtonSeek(-5)} size="small">
+                    {"◀5"}
+                  </Button>
+                  <Button onClick={() => handleButtonSeek(-2)} size="small">
+                    {"◀2"}
+                  </Button>
+                  <Button onClick={() => handleButtonSeek(2)} size="small">
+                    {"2▶"}
+                  </Button>
+                  <Button onClick={() => handleButtonSeek(5)} size="small">
+                    {"5▶"}
+                  </Button>
+                  <Button onClick={() => handleButtonSeek(10)} size="small">
+                    {"10▶"}
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
-        ) : (
-          <div className={styles.fileInput} {...getRootProps()}>
-            <input {...getInputProps()} />
-            {isDragActive ? (
-              <p>Drop the files here ...</p>
-            ) : (
-              <p>
-                Drag &apos;n&apos; drop some files here, or click to select
-                files
-              </p>
-            )}
-          </div>
-        )}
-        <div ref={chatContainerRef} className={styles.chat}>
-          <div className={styles.chatMessages}>
+          ) : (
+            <div className={styles.fileInput} {...getRootProps()}>
+              <input {...getInputProps()} />
+              {isDragActive ? (
+                <p>Drop the files here ...</p>
+              ) : (
+                <p>
+                  Drag &apos;n&apos; drop some files here, or click to select
+                  files
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+        <div className={styles.chat}>
+          <div
+            onClick={() => setIsEmojiPickerOpen(false)}
+            ref={chatContainerRef}
+            className={styles.chatMessages}
+          >
             {chatMessages.map(
               ({ username, message, timestamp, color }, index) => {
                 return username === myUsername ? (
                   <div
+                    key={index}
                     className={`${styles.chatMessageBlock} ${styles.chatMessageBlockRight}`}
                   >
                     <div
                       className={`${styles.chatMessage} ${styles.chatMessageRight}`}
-                      key={index}
                     >
                       <span
                         style={{ color }}
@@ -402,6 +423,7 @@ export default function Home() {
                   </div>
                 ) : (
                   <div
+                    key={index}
                     className={`${styles.chatMessageBlock} ${styles.chatMessageBlockLeft}`}
                   >
                     <div className={styles.avatar}>
@@ -414,7 +436,6 @@ export default function Home() {
                     </div>
                     <div
                       className={`${styles.chatMessage} ${styles.chatMessageLeft}`}
-                      key={index}
                     >
                       <span
                         style={{ color }}
@@ -437,6 +458,10 @@ export default function Home() {
             )}
           </div>
           <div className={styles.chatTextAreaContainer}>
+            <SmileOutlined
+              className={styles.emojiButton}
+              onClick={handleToggleEmojiOpen}
+            />
             <TextArea
               placeholder="Сообщение"
               autoSize={{
@@ -447,10 +472,35 @@ export default function Home() {
               ref={messageAreaRef}
               variant="borderless"
               onKeyDown={handleKeyDown}
+              onFocus={() => {
+                if (isMobile) {
+                  setIsEmojiPickerOpen(false);
+                }
+              }}
             />
             <SendOutlined
               className={styles.sendButton}
               onClick={handleSendMessage}
+            />
+            <EmojiPicker
+              previewConfig={{
+                showPreview: false,
+              }}
+              searchDisabled
+              width="100%"
+              height={250}
+              style={{
+                padding: 0,
+                width: "100%",
+                borderRadius: 0,
+              }}
+              autoFocusSearch={false}
+              open={isEmojiPickerOpen}
+              emojiStyle={EmojiStyle.APPLE}
+              theme={Theme.DARK}
+              onEmojiClick={({ emoji }) =>
+                setMessageInput(messageInput + emoji)
+              }
             />
           </div>
         </div>

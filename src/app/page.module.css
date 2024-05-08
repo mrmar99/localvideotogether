@@ -19,7 +19,7 @@
 }
 
 .videoContainer {
-  position: sticky;
+  position: initial;
 }
 
 .videoControls {
@@ -97,21 +97,30 @@
 }
 
 .chat {
-  padding: 16px 16px 70px 16px;
-  background-color: #0e1621;
-  overflow-y: auto;
   flex: 1;
-}
-
-.chatMessages {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  justify-content: space-between;
+  background-color: #0e1621;
+  overflow-y: auto;
 }
 
 .avatar {
   align-self: flex-end;
   margin-bottom: -6px;
+}
+
+.chatMessages {
+  flex-grow: 1;
+  display: flex;
+  padding: 16px;
+  flex-direction: column;
+  overflow-y: auto;
+  gap: 10px;
+}
+
+.chatMessages > :first-child {
+  margin-top: auto;
 }
 
 .chatMessageBlock {
@@ -136,6 +145,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.chatMessageBlockLeft {
+  align-self: flex-start;
 }
 
 .chatMessageBlockRight {
@@ -184,7 +197,7 @@
 .chatMessageMessage {
   margin-bottom: 8px;
   overflow-wrap: break-word;
-  word-break: break-all;
+  word-break: break-word;
   white-space: break-spaces;
   text-align: left;
   text-wrap: wrap;
@@ -199,18 +212,17 @@
 }
 
 .chatTextAreaContainer {
-  position: fixed!important;
+  position: relative;
   bottom: 0;
   left: 0;
   width: 100%;
-  z-index: 1;
+  z-index: 10;
   user-select: none;
 }
 
 .chatTextAreaContainer textarea {
-  position: relative;
   border-radius: 0;
-  padding: 13px 90px 4px 20px;
+  padding: 13px 90px 4px 50px;
   background-color: #17212b;
   color: white;
   outline: none;
@@ -225,6 +237,20 @@
   outline: none;
 }
 
+.emojiButton {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 6px;
+  top: 0px;
+  left: 0px;
+  outline: none;
+  z-index: 2;
+}
+
 .sendButton {
   position: absolute;
   display: flex;
@@ -235,8 +261,8 @@
   border-radius: 6px;
   top: 0px;
   right: 0px;
-  z-index: 10;
   outline: none;
+  z-index: 2;
 }
 
 .sendButton:focus,
