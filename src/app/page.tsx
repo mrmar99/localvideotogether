@@ -281,7 +281,7 @@ export default function Home() {
   return (
     <React.Fragment>
       <div className={styles.container}>
-        <div>
+        <div className={styles.leftTopWrapper}>
           <div className={styles.statusBar}>
             <div className={styles.userSettings}>
               <ColorPicker
