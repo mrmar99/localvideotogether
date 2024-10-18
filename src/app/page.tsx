@@ -10,7 +10,6 @@ import {
   SendOutlined,
   TeamOutlined,
   UserOutlined,
-  SmileOutlined,
 } from "@ant-design/icons";
 import { generateUsername } from "unique-username-generator";
 import styles from "./page.module.css";
@@ -18,7 +17,6 @@ import React from "react";
 import { isMobile } from "react-device-detect";
 import Avatar from "boring-avatars";
 import randomColor from "randomcolor";
-import EmojiPicker, { EmojiStyle, Theme } from "emoji-picker-react";
 
 const ColorPicker = dynamic(() => import("antd/lib/color-picker"), {
   ssr: false,
@@ -72,7 +70,6 @@ export default function Home() {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isSeeking, setIsSeeking] = useState(false);
-  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [chatMessages, setChatMessages] = useState<Array<TChatMessage>>([]);
   const [messageInput, setMessageInput] = useState("");
@@ -217,10 +214,6 @@ export default function Home() {
   };
 
   const handleSendMessage = () => {
-    if (!isEmojiPickerOpen) {
-      messageAreaRef.current?.focus();
-    }
-
     const msg = messageInput.trim();
     if (msg !== "") {
       const newMessage: TChatMessage = {
@@ -271,11 +264,6 @@ export default function Home() {
       e.preventDefault();
       handleSendMessage();
     }
-  };
-
-  const handleToggleEmojiOpen = () => {
-    const newState = !isEmojiPickerOpen;
-    setIsEmojiPickerOpen(newState);
   };
 
   return (
@@ -343,23 +331,23 @@ export default function Home() {
                   </Popconfirm>
                 </div>
                 <div className={styles.videoControlsRow}>
+                  <Button onClick={() => handleButtonSeek(-30)} size="small">
+                    {"◀30"}
+                  </Button>
                   <Button onClick={() => handleButtonSeek(-10)} size="small">
                     {"◀10"}
                   </Button>
                   <Button onClick={() => handleButtonSeek(-5)} size="small">
                     {"◀5"}
                   </Button>
-                  <Button onClick={() => handleButtonSeek(-2)} size="small">
-                    {"◀2"}
-                  </Button>
-                  <Button onClick={() => handleButtonSeek(2)} size="small">
-                    {"2▶"}
-                  </Button>
                   <Button onClick={() => handleButtonSeek(5)} size="small">
                     {"5▶"}
                   </Button>
                   <Button onClick={() => handleButtonSeek(10)} size="small">
                     {"10▶"}
+                  </Button>
+                  <Button onClick={() => handleButtonSeek(30)} size="small">
+                    {"30▶"}
                   </Button>
                 </div>
               </div>
@@ -380,7 +368,6 @@ export default function Home() {
         </div>
         <div className={styles.chat}>
           <div
-            onClick={() => setIsEmojiPickerOpen(false)}
             ref={chatContainerRef}
             className={styles.chatMessages}
           >
@@ -458,10 +445,6 @@ export default function Home() {
             )}
           </div>
           <div className={styles.chatTextAreaContainer}>
-            <SmileOutlined
-              className={styles.emojiButton}
-              onClick={handleToggleEmojiOpen}
-            />
             <TextArea
               placeholder="Сообщение"
               autoSize={{
@@ -472,35 +455,10 @@ export default function Home() {
               ref={messageAreaRef}
               variant="borderless"
               onKeyDown={handleKeyDown}
-              onFocus={() => {
-                if (isMobile) {
-                  setIsEmojiPickerOpen(false);
-                }
-              }}
             />
             <SendOutlined
               className={styles.sendButton}
               onClick={handleSendMessage}
-            />
-            <EmojiPicker
-              previewConfig={{
-                showPreview: false,
-              }}
-              searchDisabled
-              width="100%"
-              height={250}
-              style={{
-                padding: 0,
-                width: "100%",
-                borderRadius: 0,
-              }}
-              autoFocusSearch={false}
-              open={isEmojiPickerOpen}
-              emojiStyle={EmojiStyle.APPLE}
-              theme={Theme.DARK}
-              onEmojiClick={({ emoji }) =>
-                setMessageInput(messageInput + emoji)
-              }
             />
           </div>
         </div>
