@@ -50,13 +50,13 @@ export default function Home() {
   }, []);
 
   let usernameInStorage: string = "";
-  if (typeof window !== "undefined") {
-    usernameInStorage =
-      window.localStorage.getItem("togethervideo.username") || "";
-  }
   let colorInStorage: string = "";
+  let avatarInStorage: string | null = null;
+
   if (typeof window !== "undefined") {
+    usernameInStorage = window.localStorage.getItem("togethervideo.username") || "";
     colorInStorage = window.localStorage.getItem("togethervideo.color") || "";
+    avatarInStorage = window.localStorage.getItem("togethervideo.avatar");
   }
 
   const [myUsername, setMyUsername] = useState(() => {
@@ -65,6 +65,7 @@ export default function Home() {
   const [userColor, setUserColor] = useState(() => {
     return colorInStorage || "#fff";
   });
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(avatarInStorage);
   const [isConnected, setIsConnected] = useState(false);
   const [transport, setTransport] = useState("N/A");
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -176,6 +177,13 @@ export default function Home() {
     }
   }, [currentTime]);
 
+  useEffect(() => {
+    const savedAvatarUrl = localStorage.getItem("togethervideo.avatar");
+    if (savedAvatarUrl) {
+      setAvatarUrl(savedAvatarUrl);
+    }
+  }, []);
+
   const handlePlay = () => {
     console.log("[client] play");
     if (!videoUrl) return;
@@ -263,6 +271,21 @@ export default function Home() {
     if (!isMobile && e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    }
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        if (result) {
+          setAvatarUrl(result); // устанавливаем URL аватарки
+          localStorage.setItem("togethervideo.avatar", result); // сохраняем в localStorage
+        }
+      };
+      reader.readAsDataURL(file); // преобразуем файл в Data URL (важно!)
     }
   };
 
@@ -367,6 +390,15 @@ export default function Home() {
           )}
         </div>
         <div className={styles.chat}>
+          <label className={styles.avatarUploadLabel}>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarChange}
+              className={styles.avatarUploadInput}
+            />
+            Сменить аватарку
+          </label>
           <div
             ref={chatContainerRef}
             className={styles.chatMessages}
@@ -400,12 +432,19 @@ export default function Home() {
                       </div>
                     </div>
                     <div className={styles.avatar}>
-                      <Avatar
-                        colors={[color, ...randomColors, color]}
-                        name={username}
-                        size={30}
-                        variant="beam"
-                      />
+                      {avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt="User Avatar"
+                        />
+                      ) : (
+                        <Avatar
+                          size={30}
+                          name={username}
+                          variant="beam"
+                          colors={[color, ...randomColors, color]}
+                        />
+                      )}
                     </div>
                   </div>
                 ) : (

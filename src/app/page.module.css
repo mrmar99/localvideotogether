@@ -133,6 +133,20 @@
   margin-bottom: -6px;
 }
 
+.avatar img {
+  border-radius: 50%;
+  height: 30px;
+  width: 30px;
+  align-self: flex-end;
+  margin-bottom: -6px;
+}
+
+.avatarUploadLabel {
+  padding: 10px;
+  font-size: 12px;
+  position: absolute;
+}
+
 .chatMessages {
   flex-grow: 1;
   display: flex;
