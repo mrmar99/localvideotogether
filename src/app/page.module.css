@@ -45,6 +45,17 @@
   cursor: pointer;
 }
 
+.leftTopWrapper {
+  position: relative;
+}
+
+.videoContainer {
+  position: absolute;
+  max-width: 1200px;
+  width: 100%;
+  z-index: 3;
+}
+
 .videoControls {
   display: flex;
   flex-direction: column;
@@ -141,16 +152,16 @@
   margin-bottom: -6px;
 }
 
-.avatarUploadLabel {
-  padding: 10px;
-  font-size: 12px;
+.avatarUploadInput {
   position: absolute;
+  background-color: #0e1621;
+  z-index: 2;
 }
 
 .chatMessages {
   flex-grow: 1;
   display: flex;
-  padding: 16px;
+  padding: 32px 16px 16px;
   flex-direction: column;
   overflow-y: auto;
   gap: 10px;

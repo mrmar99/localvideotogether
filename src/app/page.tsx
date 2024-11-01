@@ -75,6 +75,9 @@ export default function Home() {
   const [chatMessages, setChatMessages] = useState<Array<TChatMessage>>([]);
   const [messageInput, setMessageInput] = useState("");
   const [clientsQty, setClientsQty] = useState(1);
+
+  const [kbHeight, setKbHeight] = useState(0);
+
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<ReactPlayer>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -95,6 +98,29 @@ export default function Home() {
       behavior: "smooth",
     });
   };
+
+  useEffect(() => {
+    const handleResize = () => {
+      const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      const keyboardVisible = window.innerHeight - viewportHeight;
+
+      setKbHeight(keyboardVisible > 100 ? keyboardVisible : 0);
+    };
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+    } else {
+      window.addEventListener('resize', handleResize);
+    }
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize);
+      } else {
+        window.removeEventListener('resize', handleResize);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
@@ -222,6 +248,8 @@ export default function Home() {
   };
 
   const handleSendMessage = () => {
+    messageAreaRef.current?.focus();
+
     const msg = messageInput.trim();
     if (msg !== "") {
       const newMessage: TChatMessage = {
@@ -322,7 +350,12 @@ export default function Home() {
             </div>
           </div>
           {videoUrl ? (
-            <div className={styles.videoContainer}>
+            <div
+              className={styles.videoContainer}
+              style={{
+                top: kbHeight + 30,
+              }}
+            >
               <ReactPlayer
                 className={styles.video}
                 ref={videoRef}
@@ -390,15 +423,12 @@ export default function Home() {
           )}
         </div>
         <div className={styles.chat}>
-          <label className={styles.avatarUploadLabel}>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleAvatarChange}
-              className={styles.avatarUploadInput}
-            />
-            Сменить аватарку
-          </label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarChange}
+            className={styles.avatarUploadInput}
+          />
           <div
             ref={chatContainerRef}
             className={styles.chatMessages}
