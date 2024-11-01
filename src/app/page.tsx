@@ -353,7 +353,7 @@ export default function Home() {
             <div
               className={styles.videoContainer}
               style={{
-                top: kbHeight + 30,
+                top: kbHeight + (kbHeight > 0 ? 0 : 30),
               }}
             >
               <ReactPlayer
